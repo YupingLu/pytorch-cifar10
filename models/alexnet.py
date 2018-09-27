@@ -3,7 +3,7 @@ AlexNet for CIFAR10.
 '''
 import torch.nn as nn
 
-__all__ = ['AlexNet', 'alexnet']
+__all__ = ['AlexNet','alexnet']
 
 class AlexNet(nn.Module):
 
