@@ -6,7 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from models import *
+#from models import *
+from models.alexnet import alexnet
 
 def train(args, model, device, train_loader, optimizer, criterion, epoch):
     model.train()
@@ -85,7 +86,7 @@ def main():
     testset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
-    model = AlexNet().to(device)
+    model = alexnet().to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
