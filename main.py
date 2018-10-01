@@ -67,8 +67,8 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--weight-decay', type=float, default=5e-4, metavar='W',
                         help='weight decay (default: 5e-1)')
-    parser.add_argument('--gpu-id', type=int, default=2, metavar='N'
-                        help='id(s) for CUDA_VISIBLE_DEVICES (default: 2)')
+    parser.add_argument('--gpu-id', type=str, default='3', metavar='N',
+                        help='id(s) for CUDA_VISIBLE_DEVICES (default: 3)')
     args = parser.parse_args()
 
     # Use CUDA
