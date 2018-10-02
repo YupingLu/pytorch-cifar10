@@ -47,7 +47,7 @@ def test(args, model, device, test_loader, criterion):
         100. * correct / len(test_loader.dataset)))
 
 def main():
-    # Training settings
+    # Optimization options
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
@@ -59,16 +59,24 @@ def main():
                         help='learning rate (default: 0.1)')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
+    parser.add_argument('--weight-decay', type=float, default=5e-4, metavar='W',
+                        help='weight decay (default: 5e-1)')
+    #Device options
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
+    parser.add_argument('--gpu-id', type=str, default='3', metavar='N',
+                        help='id(s) for CUDA_VISIBLE_DEVICES (default: 3)')
+    # Miscs
     parser.add_argument('--seed', type=int, default=2018, metavar='S',
                         help='random seed (default: 2018)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--weight-decay', type=float, default=5e-4, metavar='W',
-                        help='weight decay (default: 5e-1)')
-    parser.add_argument('--gpu-id', type=str, default='3', metavar='N',
-                        help='id(s) for CUDA_VISIBLE_DEVICES (default: 3)')
+    # Checkpoint
+    parser.add_argument('--checkpoint', type=str, default='checkpoint', metavar='PATH',
+                        help='path to save checkpoint (default: checkpoint)')
+    parser.add_argument('--resume', action='store_true', default=False,
+                        help='resume from checkpoint')
+    
     args = parser.parse_args()
 
     # Use CUDA
@@ -81,7 +89,7 @@ def main():
         torch.cuda.manual_seed_all(args.seed)
 
     device = torch.device("cuda" if use_cuda else "cpu")
-    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+    kwargs = {'num_workers': 2, 'pin_memory': True} if use_cuda else {}
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -101,7 +109,18 @@ def main():
     testset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
-    model = alexnet().to(device)
+    print('==> Building model..')
+    model = alexnet(num_classes=10).to(device)
+    '''
+    if args.resume:
+        # Load checkpoint.
+        print('==> Resuming from checkpoint..')
+        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        checkpoint = torch.load('./checkpoint/ckpt.t7')
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+    '''
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
