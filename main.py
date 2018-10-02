@@ -33,6 +33,7 @@ def test(args, model, device, test_loader, criterion):
     model.eval()
     test_loss = 0
     correct = 0
+    acc = 0
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
@@ -41,20 +42,23 @@ def test(args, model, device, test_loader, criterion):
             pred = output.max(1)[1] # get the index of the max log-probability
             correct += pred.eq(target).sum().item()
 
-    test_loss /= len(test_loader.dataset)
+    test_loss /= len(test_loader)
+    acc = 100. * correct / len(test_loader.dataset)
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+        test_loss, correct, len(test_loader.dataset), acc))
+    return acc
 
 def main():
-    # Optimization options
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
+    # Optimization options
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
     parser.add_argument('--test-batch-size', type=int, default=100, metavar='N',
                         help='input batch size for testing (default: 100)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
+    parser.add_argument('--start-epoch', type=int, default=1, metavar='N',
+                        help='resume epoch (default: 1')
     parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                         help='learning rate (default: 0.1)')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
@@ -111,23 +115,35 @@ def main():
 
     print('==> Building model..')
     model = alexnet(num_classes=10).to(device)
-    '''
+    best_acc = 0 # best test accuracy
+    start_epoch = args.start_epoch
     if args.resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('./checkpoint/ckpt.t7')
-        net.load_state_dict(checkpoint['net'])
+        checkpoint = torch.load('./checkpoint/pth.tar')
+        model.load_state_dict(checkpoint['model'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
-    '''
+    
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(start_epoch, args.epochs + start_epoch):
         train(args, model, device, train_loader, optimizer, criterion, epoch)
-        test(args, model, device, test_loader, criterion)
-
+        acc = test(args, model, device, test_loader, criterion)
+        # Save checkpoint.
+        if acc > best_acc:
+            print('Saving..')
+            state = {
+                'model': model.state_dict(),
+                'acc': acc,
+                'epoch': epoch,
+            }
+            if not os.path.isdir('checkpoint'):
+                os.mkdir('checkpoint')
+            torch.save(state, './checkpoint/pth.tar')
+            best_acc = acc
 
 if __name__ == '__main__':
     main()
